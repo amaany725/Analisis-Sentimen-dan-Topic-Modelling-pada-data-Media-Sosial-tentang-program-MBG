@@ -15,11 +15,9 @@ import pyLDAvis
 import pyLDAvis.gensim_models as gensimvis
 
 def main():
-    # 1️⃣ Load data
     df = pd.read_csv("clean_review (2).csv")
     texts = df['full_text_stemmed'].apply(ast.literal_eval).tolist()
-
-    # 2️⃣ Bigram dan trigram
+    
     bigram = Phrases(texts, min_count=5, threshold=100)
     trigram = Phrases(bigram[texts], threshold=100)
 
@@ -29,12 +27,10 @@ def main():
     texts_bigrams = [bigram_mod[doc] for doc in texts]
     texts_trigrams = [trigram_mod[bigram_mod[doc]] for doc in texts]
 
-    # 3️⃣ Dictionary dan corpus
     dictionary = corpora.Dictionary(texts_trigrams)
     dictionary.filter_extremes(no_below=5, no_above=0.9)
     corpus = [dictionary.doc2bow(text) for text in texts_trigrams]
 
-    # 4️⃣ Word Cloud & Top 10 kata
     joined_trigrams = [' '.join(doc) for doc in texts_trigrams]
     vectorizer = CountVectorizer()
     bow_encoded = vectorizer.fit_transform(joined_trigrams)
@@ -65,7 +61,6 @@ def main():
     plt.tight_layout()
     plt.show()
 
-    # 5️⃣ LDA Model
     lda_model = LdaModel(corpus=corpus,
                          id2word=dictionary,
                          num_topics=5,
@@ -82,7 +77,6 @@ def main():
     df['topik_lda'] = topic_per_doc
     print(df[['clean_review', 'topik_lda']].head())
 
-    # 6️⃣ Coherence Score
     coherence_model_lda = CoherenceModel(model=lda_model,
                                          texts=texts_trigrams,
                                          dictionary=dictionary,
@@ -91,7 +85,6 @@ def main():
     coherence_lda = coherence_model_lda.get_coherence()
     print(f"\n🧠 Coherence Score (5 topik): {coherence_lda:.4f}")
 
-    # 7️⃣ Uji coherence beberapa topik
     coherence_values = []
     topic_range = range(2, 11)
 
@@ -111,7 +104,6 @@ def main():
         coherence_values.append(score)
         print(f"Topik: {num_topics} → Coherence Score: {score:.4f}")
 
-    # 8️⃣ Final LDA dengan topik terbaik
     best_lda = LdaModel(corpus=corpus,
                         id2word=dictionary,
                         num_topics=8,
@@ -123,7 +115,6 @@ def main():
         print(f"\n🧠 Topik {idx}:")
         print(topic)
 
-    # 9️⃣ Visualisasi pyLDAvis
     pyldavis_prepared = gensimvis.prepare(best_lda, corpus, dictionary)
     pyLDAvis.display(pyldavis_prepared)
     pyLDAvis.save_html(pyldavis_prepared, 'output.html')
